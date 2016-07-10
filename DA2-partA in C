@@ -1,0 +1,15 @@
+#include <avr/io.h>
+#include <avr/delay.h> 
+int main(){
+
+DDRC |= (1 << PC0);		// PC0 is output
+
+while(1)				
+{
+		_delay_ms(250); // wait 250 milliseconds
+		PORTC=0x01; // turn off all c ports
+		_delay_ms(250); // wait 500 milliseconds
+		PORTC=0x00;
+		
+	}
+}
