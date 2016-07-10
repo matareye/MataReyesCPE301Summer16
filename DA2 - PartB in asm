@@ -1,0 +1,36 @@
+SBI DDRB, 0			; output PB0
+	SBI DDRB, 1			; output PB1
+	SBI DDRB, 2			; output PB2
+	SBI DDRB, 3			; output PB3
+	SBI DDRB, 4			; output PB4
+	SBI DDRB, 5			; output PB5
+	SBI DDRD, 6			; output PB6
+	SBI DDRD, 7			; output PB7
+
+	LDI R18, 0x00			; counter 
+
+L1: CALL DELAY
+	INC R18
+	OUT PORTB, R18
+	
+DELAY:
+	LDI R20, HIGH(34286)
+	STS TCNT1H, R20		;TCNT1H = 0xA4 
+	LDI R20, LOW(34286)
+	STS TCNT1L, R20		;TCNT1L = 0x72 
+	LDI R20,0x00
+	STS TCCR1A, R20		;WGM11:10 = 00
+	LDI R20,0x03
+	STS TCCR1B, R20		;WGM13:12 = 05, Normal mode, prescaler = 1024
+
+AGAIN:
+	IN R20,TIFR1			;read TIFR
+	SBRS R20,TOV1			;if TOV1 is set skip next instruction
+	RJMP AGAIN
+	LDI R20,0x00
+	STS TCCR1B,R20		;stop Timer1
+	LDI R20,0xFF
+	OUT TIFR1, R20		;clear TOV1
+	RET
+
+
