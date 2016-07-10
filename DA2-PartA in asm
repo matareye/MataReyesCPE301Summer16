@@ -1,0 +1,31 @@
+;DA2-Part A - asm
+
+;initialize the stack pointer
+LDI R20, HIGH(RAMEND)
+OUT SPH, R20
+LDI R20, LOW(RAMEND)
+OUT SPL, R20	
+
+SBI DDRC, 0			;set bit 0 of DDRC
+HERE: SBI PORTC, 0		;set to High PC0
+CALL HDELAY			;call the delay subroutine
+CBI PORTC, 0			;PC0 = 0
+CALL HDELAY
+RJMP HERE			;keep doing it
+
+HDELAY: 
+		LDI R20, 16
+L1:		LDI R21, 200
+L2:		LDI R22, 250
+L3:		
+		NOP
+		NOP
+		DEC R22
+		BRNE L3
+		
+		DEC R21
+		BRNE L2
+
+		DEC R20
+		BRNE L1
+		RET
