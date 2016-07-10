@@ -1,0 +1,120 @@
+.ORG 0x0		;location for reset
+JMP MAIN
+.ORG 0x12		;location for timer1 overflow
+JMP T1_OV_ISR	;jump to ISR for timer0
+
+.ORG 0x100
+MAIN:	LDI R20, HIGH(RAMEND)
+		OUT SPH, R20
+		LDI R20, LOW(RAMEND)
+		OUT SPL, R20		;initialize stack
+
+	LDI R16, 0xFF
+	OUT DDRB, R16		;set all of Port B output
+
+	SBI DDRB, 0			; output PB0
+	SBI DDRB, 1			; output PB1
+	SBI DDRB, 2			; output PB2
+	SBI DDRB, 3			; output PB3
+	SBI DDRB, 4			; output PB4
+	SBI DDRB, 5			; output PB5
+	LDI R16, 0xFF
+	OUT DDRD, R16		;make PORTD output
+	SBI DDRD, 6			; output PB6
+	SBI DDRD, 7			; output PB7
+
+	LDI R16, 0xFF
+	OUT DDRC, R16		; make PORTC output
+	SBI DDRC, 4			; output PC5
+	SBI DDRC,5			; output PC6 
+
+	SBI DDRC, 1		;PORT C 1 as an output
+LDI R20, (1<<TOIE1)
+	SEI			;enable interrupts globally
+	LDI R20,  HIGH (-640)
+	STS TCNT1H, R20		;load timer1 with high byte
+	LDI R20, LOW(-640)
+	STS TCNT1L, R20
+		
+		
+	LDI R20, 0x00
+	STS TCNT1L, R20
+	LDI R20, 0x01
+	STS TCCR1B, R20
+		
+	LDI R20, 0xFF
+	OUT DDRB, R20			;make port b output
+	LDI R20, 0xFF
+	OUT DDRC, R20			;make portc output
+		
+
+	LDI R17, 0x01
+	LDI R18, 0x00		;counter for rising edge
+	LDI R19, 0x00		;counter for 5th rising
+	LDI R20, 0x00		;counter for 10th rising
+	LDI R23, 0x00
+	LDI R24, 0x00
+
+L1: CALL DELAY
+	INC R18			;update rising counter
+	OUT PORTB, R18
+	OUT PORTD, R18
+	INC R19			;update 5th pulse
+	INC R20			;update 10th pulse
+
+	CPI R19, 5		;check if counter is at 5
+	BREQ CHECKFIVE
+	CPI R20, 10		;check if counter is at 10
+	BREQ CHECKTEN
+	JMP D2		;if neither, then dont toggle
+
+CHECKFIVE:
+	LDI R17, 0x10	;PC4=1, PC5=0, I used PC4 in this case because there is no PC6 on the xplained mini
+	IN R23, PORTC
+	EOR R23, R17
+	OUT PORTC, R23		;TOGGLE PC4
+	LDI R17, 0x01
+	
+CHECKTEN:
+	LDI R17, 0x20	;PC4=0, PC5=1	
+	EOR R24, R17
+	OUT PORTC, R23	;toggle PC5
+	LDI R17, 0x01
+D2:
+	CALL DELAY
+	JMP L1
+DELAY:
+	LDI R20, HIGH(34286)
+	STS TCNT1H, R20		;TCNT1H = 0xA4 timer1 high
+	LDI R20, LOW(34286)
+	STS TCNT1L, R20		;TCNT1L = 0x72 
+	LDI R20,0x00
+	STS TCCR1A, R20		;WGM11:10 = 00
+	LDI R20,0x3
+	STS TCCR1B, R20		;WGM13:12 = 05, Normal mode, prescaler = 1024
+
+AGAIN:
+	IN R20,TIFR1		;read TIFR
+	SBRS R20,TOV1		;if TOV1 is set skip next instruction
+	RJMP AGAIN
+	LDI R20,0x00
+	STS TCCR1B,R20		;stop Timer1
+	LDI R20,0xFF
+	OUT TIFR1, R20		;clear TOV1 flag
+	RET
+
+;----ISR------
+	.ORG 0x300
+	T1_OV_ISR:
+		LDI R18, HIGH(-640)
+		STS TCNT1H, R18		;load timer 1 with high byte
+		LDI R18, LOW(-640)
+		STS TCNT1L, R18		;load timer1 with low byte
+		IN R18, PORTC		;read portb
+		LDI R19, 0x10		;10000000 for toggling PC4
+		LDI R20, 0x20
+		EOR R18, R19
+		STS PORTC, R18		;TOGGLE PC4
+		EOR R18, R20
+		STS PORTC, R18		;toggle pc5
+		RETI
