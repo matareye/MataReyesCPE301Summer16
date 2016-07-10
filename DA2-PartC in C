@@ -1,0 +1,31 @@
+#define F_CPU 8000000UL
+#include <avr/io.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
+
+int main(void)
+{
+	int rcount=0;		//used for rising counter
+	int count=0;		//used for counting led portb
+	unsigned char j=(1<< PORTC4);
+	unsigned char k=(1<< PORTC5);
+	
+	
+	DDRB=0xFF;		//set Port B as output
+	DDRC=0xFF;		//set PORT C as output
+		
+    while(1)
+    {
+        _delay_ms(250);
+		count++;		//update counter
+		PORTB = count;	//output to port b
+		rcount++;		//update rising edge counter
+		
+		if(rcount%5 == 0)
+		PORTC ^=(1<<PC4);
+		
+		if(rcount%10 == 0)
+		PORTC ^=(1<<PC5);
+						
+    }
+}
