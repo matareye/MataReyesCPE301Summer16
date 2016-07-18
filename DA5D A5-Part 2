@@ -1,0 +1,48 @@
+#define F_CPU 16000000UL 
+#include <util/delay.h> 
+#include <avr/io.h>
+#include <asf.h>
+void delay_ms(int);		//shell procedure to call _delay_ms
+
+int main()
+{
+	uint8_t val;		//8-bit int type for potvalues
+	float speed;		//value to determine speed of stepper motor
+	
+	DDRD |= (1<<PD0) | (1<<PD1) | (1<<PD2)| (1<<PD3);  //PORTD0, PORTD1, PORTD2, AND PORTD3 are outputs
+	DDRC |= (0<<PC0); //analog PortC as output for the pot
+
+
+	ADCSRA |= (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);	//0b10000111
+	
+	ADMUX |= (0<<REFS1) | (1<<REFS0) | (1<<ADLAR);	
+	while(1)
+	{
+		ADCSRA |= (1<<ADSC);			//start the conversation
+		
+		while((ADCSRA &(1<<ADIF)) == 0);	//wait until conversation is finished
+		
+		val = ADCH << 1;				//potvalue = ADC
+		
+		speed =  val * 5.0 / 1024.0;	//determine the potentiometer value
+	
+
+		PORTD = 0b0110;					// PD1 and PD2 high
+		delay_ms(speed * 200);			
+		
+		PORTD = 0b0011;					// PD0 and PD1 high
+		delay_ms(speed * 200); 	
+		
+		PORTD = 0b1001;					//PD0 and PD3 high
+		delay_ms(speed * 200);	
+		
+		PORTD = 0b1100;					//PD3 and PD4 high
+		delay_ms(speed * 200);	
+	}
+	return 0;
+}
+void delay_ms(int count){
+	int i;
+	for(i=0; i< count; i++)
+	_delay_ms(1);
+}
