@@ -1,0 +1,41 @@
+#define F_CPU 16000000UL 
+#include <util/delay.h>
+#include <avr/io.h>
+void delay_ms(int);		//shell procedure to call _delay_ms
+
+
+int main()
+{
+	uint8_t val;	//8-bit int type for pot values
+	float speed;	//value to determine speed of DC motor
+	
+	DDRD |= (1<<PD6); //PortD.6 is an output
+	DDRC |= (0<<PC0);	//analog PortC.0 is output for the pot
+
+	
+	ADCSRA |= (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);	//0b10000111
+	ADMUX |= (0<<REFS1) | (1<<REFS0) | (1<<ADLAR);
+	
+	while(1)
+	{
+		ADCSRA |= (1<<ADSC);			//Begin Conversation
+		
+		while((ADCSRA &(1<<ADIF)) == 0); //wait for conversation to finish
+		
+		val = ADCH << 1;				//pot value = ADC
+		
+		speed =  val * 5.0 / 1024.0;	//determine the speed
+		
+		
+		PORTD |= (1<<PD6);			//motor is on
+		delay_ms(speed * 30);		//delay
+		
+		PORTD &= ~(1<<PD6);			//motor is off
+		delay_ms((1 - speed) * 30); 
+	}
+}
+void delay_ms(int count){
+	int i;
+	for(i=0; i< count; i++)
+	_delay_ms(1);
+}
